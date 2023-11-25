@@ -7,22 +7,52 @@ from recordInput.recordKeyboard import *
 from findSnakePixels.findSnakePixels import *
 from testing.testFunctions import *
 
+# NOTE- a pixel of an image is stored as (row, col) and not (x, y)
+
 if __name__ == '__main__':
 
     time.sleep(5) # to begin the game
 
     refSS = Screenshot(0, 0, 900, 1440)
-    coorArray = MakeCoorArray(50)
-    snakePixels = findSnakePixels(50)
+    gridDimension = 30
+    refArea = 100
+    scanArea = 150
+    coorArray = MakeCoorArray(gridDimension)
+    # dirArray = dirMotionArray(coorArray, refArea, scanArea) # for making arrow showing image
+    snakePixels = findSnakePixels(gridDimension, refArea, scanArea)
 
+    # make arrows on refSS
+    # refSS2 = makeArrows(coorArray, dirArray, refSS)
+    # image = np.uint8(refSS2)
+    # cv2.imwrite('newupdates/outputImages/snakeDetect3_arrows.png', image)
+    
     # whiten the snake pixels in refSS
     for itr, coor in enumerate(coorArray):
         if snakePixels[itr]:
             WhitenPixel(refSS, coor[0], coor[1])
-
-    # save the image
     image = np.uint8(refSS) 
-    cv2.imwrite('newupdates/outputImages/snakeDetect0.png', image)
+    cv2.imwrite('newupdates/outputImages/snakeDetect3.png', image)
+    
+
+
+    # # testing the directions found at each spot
+    # refSS = Screenshot(0, 0, 900, 1440)
+    # coorArray = MakeCoorArray(50)
+    # # print(coorArray)
+    # dirArray = dirMotionArray(coorArray, refArea=50, scanArea=100)
+    # refSS = makeArrows(coorArray, dirArray, refSS)
+    # # save the image
+    # image = np.uint8(refSS) 
+    # cv2.imwrite('newupdates/outputImages/snakeDetect1.png', image)
+
+    # testing where a point appears on the image
+    # refSS = Screenshot(0, 0, 900, 1440)
+    # point = (300, 500)
+    # WhitenPixel(refSS, point[0], point[1])
+    # image = np.uint8(refSS)
+    # cv2.imwrite('newupdates/outputImages/snakeDetect1.png', image)    
+
+
 
     # coorArray = [(300, 300), (400, 400), (500, 500), (600, 600), (700, 700), (800, 800)]
     # directionArray = dirMotionArray(coorArray)
@@ -104,4 +134,5 @@ if __name__ == '__main__':
 # done, the offset was because of the reverse order of the coordinates returned by the matchTemplate function
 
 # current issue: findSnakes taking a lot of time, need to optimize it. Solved!
-# current issue: the corners of the whole image are detected as snake pixels, as the direction of motion is changing there, need to fix it
+# current issue: the corners of the whole image are detected as snake pixels, as the direction of motion is changing there, need to fix it. Solved
+# Next thing: need to implement the save image thing (both, snakes detected and arrows make) inside the dirMotionArray function, so that the arrows/snakes are superimposed on the same (correct) image

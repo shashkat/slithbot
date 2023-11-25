@@ -2,23 +2,24 @@ from common.utilities import *
 from scipy import stats
 
 # function to find the snake pixels, returns a boolean array
-def findSnakePixels(gridDimension):
+def findSnakePixels(gridDimension, refArea=100, scanArea=150):
     # the // is used to get the integer part of the division
 
     # this is the coordinate array, which will be given as an input to the dirMotionArray function
     coorArray = MakeCoorArray(gridDimension)
 
     # this is the direction array, which stores the direction of motion of the snake
-    dirArray = dirMotionArray(coorArray)
+    dirArray = dirMotionArray(coorArray, refArea, scanArea)
 
     # netDirection stores the net direction of motion of the snake (opposite of that actually)
     netDirection = FindNetDirection(dirArray)
 
     # this is the empty snakePixels array, which stores if a pixel is a snake pixel or not
-    snakePixels = MakeSnakePixelsArray(gridDimension)
+    # passing coorArray as its size should be same as that of coorArray
+    snakePixels = MakeSnakePixelsArray(coorArray)
 
     # loop through each coordinate in the coordinate array and check if it is a snake pixel
-    for itr, coor in enumerate(coorArray):
+    for itr, _ in enumerate(coorArray):
         if sameDirection(dirArray[itr], netDirection):
             snakePixels[itr] = False
         else:
@@ -28,7 +29,8 @@ def findSnakePixels(gridDimension):
 
 # function to check if two directions are the same
 def sameDirection(dir1, dir2):
-    if abs(dir1 - dir2) < 0.2: # this is the threshold value for the directions to be considered the same
+    # reducing below threshold increases the number of snake pixels
+    if abs(dir1 - dir2) < 0.25: # this is the threshold value for the directions to be considered the same
         return True
     else:
         return False
@@ -46,20 +48,20 @@ def sameDirection(dir1, dir2):
 #         return True
     
 # function to make an array of coordinates
-def MakeCoorArray(gridDimension):
+def MakeCoorArray(gridDimension, horizontalRange = (200,1200), verticalRange = (200,800)):
     # coorArray should be an array of coordinates
     coorArray = []
-    for row in range(900//gridDimension):
-        for col in range(1440//gridDimension):
-            coorArray.append((row*gridDimension, col*gridDimension))
+    for row in range((verticalRange[1]-verticalRange[0])//gridDimension):
+        for col in range((horizontalRange[1]-horizontalRange[0])//gridDimension):
+    # NOTE- the coorarray stores the coordinates in the form (row, col)
+            coorArray.append((verticalRange[0] + row*gridDimension, horizontalRange[0] + col*gridDimension))
     return coorArray
 
 # function to make an empty array of snake pixels
-def MakeSnakePixelsArray(gridDimension):
+def MakeSnakePixelsArray(coorArray):
     snakePixels = []
-    for row in range(900//gridDimension):
-        for col in range(1440//gridDimension):
-            snakePixels.append(False)
+    for coor in range(len(coorArray)):
+        snakePixels.append(False)
     return snakePixels
 
 # this function will take the dirArray, round off the values to maybe 1 decimal place and return the mode of the array

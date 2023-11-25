@@ -41,10 +41,24 @@ def changeCoorToBlack(img, x, y, i):
     img[x, y+i] = 0
 
 # function to whiten a pixel and its neighbors (basically make a plus sign)
-def WhitenPixel(img, x, y, plusSize = 20):
+def WhitenPixel(img, row, col, plusSize = 20):
     for i in range(-plusSize, plusSize):
-        changeCoorToWhite(img, x, y, i)
-    changeCoorToBlack(img, x, y, 0)
+        changeCoorToWhite(img, row, col, i)
+    changeCoorToBlack(img, row, col, 0)
+    return img
+
+#  function to take a coorArray (array of tuples, which are row/col for each coor), dirArray and image and make small 
+# arrows at each coordinate in the direction indicated by the dirArray
+def makeArrows(coorArray, dirArray, img):
+    img = np.array(img)  # Convert img to a NumPy array
+    for itr, coor in enumerate(coorArray):
+        row = coor[0]
+        col = coor[1]
+        dir = dirArray[itr]
+        if dir == 0:
+            continue
+        else:
+            cv2.arrowedLine(img, (col, row), (int(col+math.cos(dir)*30), int(row+math.sin(dir)*30)), (255, 255, 255), 2)
     return img
 
 # function to read an image and convert it to black and white and return it
@@ -69,7 +83,7 @@ def inRange(row, col, img):
 # scanArea is the area around the reference point to be scanned for the reference point
 def dirMotionArray(coorArray, refArea = 100, scanArea = 150):
     takeSSOrig = Screenshot(0, 0, 900, 1440)
-    time.sleep(0.0001)
+    time.sleep(0.02)
     takeSS2Orig = Screenshot(0, 0, 900, 1440)
     directionArray = []
     
