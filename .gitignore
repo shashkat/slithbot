@@ -1,3 +1,10 @@
+# ignoring old efforts
+legacy
 newUpdates
 oldFiles
+
+# other stuff
 .DS_Store
+notes.md
+logs
+environment.env
