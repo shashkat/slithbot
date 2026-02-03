@@ -562,25 +562,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# todo:
-# - change algorithm of ai snakes finding food.
-
-# changes done:
-# - made the minimum radius of rotation of all snakes same. Since player snake's target angle was always 
-# between (-TURN_SPEED, TURN_SPEED), simply clipped the target_angle for non-player snakes to the same range.
-# - now snake collisions are also checked for non-player snakes, instead of just the player snake so far.
-# - removed the case of self collision as collision in Snake.check_snake_collision()
-# - now checking food collisions for all snakes instead of just player snake, and updating each snake's 
-# length and food appropriately
-# - removed unnecessary food randomization when player dies.
-
-# previously made changes that were reversed:
-# - since after limiting the angle of rotation of non-player snakes, they were basically going in a straight 
-# line, as their speed was quite fast and they couldn't fix their mind onto a single food item. Also they 
-# were not able to detect danger in time. Hence, made the minimum distance for detection of danger as 300 
-# instead of 100 in Snake.update_ai(). Reversed this because it didn't fix the issue.
-# - when SlitherGame.step() was being called, for each snake, the update function was called, and in each 
-# call, all the snakes were updated. This redundancy is removed. This was wrong because in the update_ai, 
-# the snakes' segments weren't getting updated, but just their target angle. Hence, there wasn't any redundancy. 
-
