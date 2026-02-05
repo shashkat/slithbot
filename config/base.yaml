@@ -1,0 +1,26 @@
+# canvas:
+canvas_width: 1200
+canvas_height: 800
+
+# world:
+world_width: 2400
+world_height: 1600
+
+# simulation:
+segment_radius: 8
+food_radius: 4
+initial_length: 10
+speed: 3
+turn_speed: 0.08
+num_bots: 10
+food_count: 300
+fps: 60
+render: true  # Toggle for headless sims
+
+snake_colors:  # List of lists
+  - [[255, 107, 107], [238, 90, 82]]
+  - [[78, 205, 196], [69, 183, 170]]
+  - [[255, 230, 109], [247, 220, 111]]
+  - [[149, 225, 211], [126, 207, 192]]
+  - [[255, 159, 243], [243, 104, 224]]
+  - [[116, 185, 255], [9, 132, 227]]

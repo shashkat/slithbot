@@ -1,10 +1,13 @@
 # ignoring old efforts
-legacy
-newUpdates
-oldFiles
+/legacy
+/newUpdates
+/oldFiles
 
 # other stuff
+/notes.md
+/logs
+/environment.env
+
+# cache etc.
 .DS_Store
-notes.md
-logs
-environment.env
+__pycache__

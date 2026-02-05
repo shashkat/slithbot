@@ -3,56 +3,33 @@ import math
 import random
 import numpy as np
 from typing import List, Tuple, Dict, Optional
-
-# Initialize Pygame
-pygame.init()
-
-# Game settings
-CANVAS_WIDTH = 1200
-CANVAS_HEIGHT = 800
-WORLD_WIDTH = 2400
-WORLD_HEIGHT = 1600
-SEGMENT_RADIUS = 8
-FOOD_RADIUS = 4
-INITIAL_LENGTH = 10
-SPEED = 3
-TURN_SPEED = 0.08
-NUM_BOTS = 20
-FOOD_COUNT = 300
-FPS = 60
+from utils import *
 
 # Colors
 BACKGROUND = (45, 52, 54)
+WALL_COLOR = (238, 75, 43)
 GRID_COLOR = (60, 67, 69)
 FOOD_COLOR = (255, 217, 61)
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
-SNAKE_COLORS = [
-    [(255, 107, 107), (238, 90, 82)],
-    [(78, 205, 196), (69, 183, 170)],
-    [(255, 230, 109), (247, 220, 111)],
-    [(149, 225, 211), (126, 207, 192)],
-    [(255, 159, 243), (243, 104, 224)],
-    [(116, 185, 255), (9, 132, 227)]
-]
-
-
 class Snake:
-    def __init__(self, x: float, y: float, is_player: bool = False):
+    # initialize snake's angle, target_angle, segments, etc.
+    def __init__(self, x: float, y: float, config: dict, is_player: bool = False):
+        self.config = config
         self.segments = []
         self.is_player = is_player
         self.alive = True
         self.angle = random.random() * math.pi * 2
         self.target_angle = self.angle
-        self.color_index = random.randint(0, len(SNAKE_COLORS) - 1)
+        self.color_index = random.randint(0, len(self.config['snake_colors']) - 1)
         
         # Initialize segments
-        for i in range(INITIAL_LENGTH):
+        for i in range(self.config['initial_length']):
             self.segments.append({
-                'x': x - i * SEGMENT_RADIUS,
+                'x': x - i * self.config['segment_radius'],
                 'y': y,
-                'radius': SEGMENT_RADIUS
+                'radius': self.config['segment_radius']
             })
         
         # AI properties
@@ -73,7 +50,8 @@ class Snake:
     # other snakes' positions to make a decision about where to move.
     def update(self, snakes, food):
         if not self.alive:
-            return
+            # return
+            raise Exception('Update method shouldnt be called on a snake which is already dead. This is not how the code flow was meant to be!')
         
         # if not player, then use update_ai method to update the target angle appropriately
         if not self.is_player:
@@ -90,22 +68,17 @@ class Snake:
         
         # Move head
         new_head = {
-            'x': self.head['x'] + math.cos(self.angle) * SPEED,
-            'y': self.head['y'] + math.sin(self.angle) * SPEED,
-            'radius': SEGMENT_RADIUS
+            'x': self.head['x'] + math.cos(self.angle) * self.config['speed'],
+            'y': self.head['y'] + math.sin(self.angle) * self.config['speed'],
+            'radius': self.config['segment_radius']
         }
         
-        # THIS PART OF CODE NEEDS REWORK. I DON'T WANNA WRAP AROUND THE WORLD, BUT INSTEAD HAVE A WALL, 
-        # UPON HITTING WHICH, THE SNAKE WILL DIE.
-        # Wrap around world
-        if new_head['x'] < 0:
-            new_head['x'] = WORLD_WIDTH
-        if new_head['x'] > WORLD_WIDTH:
-            new_head['x'] = 0
-        if new_head['y'] < 0:
-            new_head['y'] = WORLD_HEIGHT
-        if new_head['y'] > WORLD_HEIGHT:
-            new_head['y'] = 0
+        # # THIS PART OF CODE NEEDS REWORK. I DON'T WANNA WRAP AROUND THE WORLD, BUT INSTEAD HAVE A WALL, 
+        # # UPON HITTING WHICH, THE SNAKE WILL DIE.
+        # # Wrap around world
+        # if not CheckWithinBounds((new_head['x'], new_head['y']), (self.config['world_width'], self.config['world_height'])):
+        #     self.die()
+        #     return -1
         
         self.segments.insert(0, new_head)
         self.segments.pop()
@@ -190,7 +163,7 @@ class Snake:
             f = food[i]
             dist = math.hypot(f['x'] - self.head['x'], f['y'] - self.head['y'])
             
-            if dist < SEGMENT_RADIUS + FOOD_RADIUS:
+            if dist < self.config['segment_radius'] + self.config['food_radius']:
                 food.pop(i)
                 self.grow()
                 food_eaten += 1
@@ -214,11 +187,20 @@ class Snake:
                 seg = snake.segments[i]
                 dist = math.hypot(seg['x'] - self.head['x'], seg['y'] - self.head['y'])
                 
-                if dist < SEGMENT_RADIUS * 1.5:
+                if dist < self.config['segment_radius'] * 1.5:
                     return True
         
         return False
     
+    # check if the snake's head is deemed outside the boundaries of the game
+    def check_wall_collision(self) -> bool:
+        world_width = self.config['world_width']
+        world_height = self.config['world_height']
+        if CheckWithinBounds((self.head['x'], self.head['y']), (world_width, world_height)):
+            # if within bounds, then no wall collision
+            return False
+        return True
+
     # append to self.segments, 3 copies of the last element in self.segments.
     def grow(self):
         tail = self.segments[-1].copy()
@@ -238,22 +220,22 @@ class Snake:
     # update the target using the direction and TURN_SPEED variable
     def turn(self, direction: int):
         """Direction: -1 for left, 1 for right"""
-        self.target_angle += direction * TURN_SPEED
+        self.target_angle += direction * self.config['turn_speed']
     
     def draw(self, screen: pygame.Surface, camera_x: float, camera_y: float):
         if not self.alive:
             return
         
-        colors = SNAKE_COLORS[self.color_index]
+        colors = self.config['snake_colors'][self.color_index]
         
         # Draw segments. Draw in reverse order so that the head appears on front.
         for i in range(len(self.segments) - 1, -1, -1):
             seg = self.segments[i]
-            screen_x = int(seg['x'] - camera_x + CANVAS_WIDTH / 2)
-            screen_y = int(seg['y'] - camera_y + CANVAS_HEIGHT / 2)
+            screen_x = int(seg['x'] - camera_x + self.config['canvas_width'] / 2)
+            screen_y = int(seg['y'] - camera_y + self.config['canvas_height'] / 2)
             
-            if screen_x < -50 or screen_x > CANVAS_WIDTH + 50 or \
-               screen_y < -50 or screen_y > CANVAS_HEIGHT + 50:
+            if screen_x < -50 or screen_x > self.config['canvas_width'] + 50 or \
+               screen_y < -50 or screen_y > self.config['canvas_height'] + 50:
                 continue
             
             # Draw body
@@ -264,8 +246,8 @@ class Snake:
                 pygame.draw.circle(screen, WHITE, (screen_x, screen_y), int(seg['radius']), 2) # when the last, width parameter is supplied, the circle isn't filled
         
         # Draw eyes on head
-        head_screen_x = int(self.head['x'] - camera_x + CANVAS_WIDTH / 2)
-        head_screen_y = int(self.head['y'] - camera_y + CANVAS_HEIGHT / 2)
+        head_screen_x = int(self.head['x'] - camera_x + self.config['canvas_width'] / 2)
+        head_screen_y = int(self.head['y'] - camera_y + self.config['canvas_height'] / 2)
         eye_offset = 5
         
         for side in [-1, 1]:
@@ -280,18 +262,21 @@ class SlitherGame:
     
     # initialize. Assigns values to .screen and .clock attributes. And if render=True, then also assigns 
     # values to fonts. Also calls the reset method.
-    def __init__(self, render: bool = True):
-        self.render_enabled = render
+    def __init__(self, config: dict):
+        self.config = config
+        self.render_enabled = self.config['render']
         
         if self.render_enabled:
-            self.screen = pygame.display.set_mode((CANVAS_WIDTH, CANVAS_HEIGHT))
+            self.screen = pygame.display.set_mode((self.config['canvas_width'], self.config['canvas_height']))
             pygame.display.set_caption("Slither.io - RL Training Environment")
             self.clock = pygame.time.Clock()
             self.font = pygame.font.Font(None, 36)
             self.small_font = pygame.font.Font(None, 24)
-        else:
-            self.screen = None
-            self.clock = None
+        
+        # I DONT THINK THESE ATTRIBUTES WOULD BE REQUIRED IF RENDER=FALSE
+        # else:
+        #     self.screen = None
+        #     self.clock = None
         
         self.reset()
     
@@ -302,20 +287,21 @@ class SlitherGame:
         self.food = []
         self.score = 0
         self.game_running = True
-        self.camera = {'x': WORLD_WIDTH / 2, 'y': WORLD_HEIGHT / 2}
+        self.camera = {'x': self.config['world_width'] / 2, 'y': self.config['world_height'] / 2}
         
         # Create player
-        self.player = Snake(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, is_player=True)
+        self.player = Snake(self.config['world_width'] / 2, self.config['world_height'] / 2, self.config, is_player=True)
         self.snakes.append(self.player)
         
-        # Create bots. Bots have two extra attributes: ai_timer, and ai_target
-        for _ in range(NUM_BOTS):
-            x = random.random() * WORLD_WIDTH
-            y = random.random() * WORLD_HEIGHT
-            self.snakes.append(Snake(x, y, is_player=False))
+        # Create bots. Bots have two extra attributes: ai_timer (used for random exploration by bot), 
+        # and ai_target (used to store location of nearest food)
+        for _ in range(self.config['num_bots']):
+            x = random.random() * self.config['world_width']
+            y = random.random() * self.config['world_height']
+            self.snakes.append(Snake(x, y, self.config, is_player=False))
         
         # Spawn food. Just appends dicts like {x, y} to self.food
-        self.spawn_food(FOOD_COUNT)
+        self.spawn_food(self.config['food_count'])
         
         return self.get_state()
     
@@ -323,8 +309,8 @@ class SlitherGame:
     def spawn_food(self, count: int):
         for _ in range(count):
             self.food.append({
-                'x': random.random() * WORLD_WIDTH,
-                'y': random.random() * WORLD_HEIGHT
+                'x': random.random() * self.config['world_width'],
+                'y': random.random() * self.config['world_height']
             })
     
     # execute one game step, which involves moving all snakes (player snake acc to input, and bot snakes 
@@ -377,12 +363,19 @@ class SlitherGame:
                 if snake is self.player:
                     self.game_running = False
         
+        # Check wall collisions
+        for snake in self.snakes:
+            if snake.check_wall_collision():
+                snake.die(self.food)
+                if snake is self.player:
+                    self.game_running = False
+        
         # Respawn dead bots
         for i in range(1, len(self.snakes)):
             if not self.snakes[i].alive:
-                x = random.random() * WORLD_WIDTH
-                y = random.random() * WORLD_HEIGHT
-                self.snakes[i] = Snake(x, y, is_player=False)
+                x = random.random() * self.config['world_width']
+                y = random.random() * self.config['world_height']
+                self.snakes[i] = Snake(x, y, self.config, is_player=False)
         
         # Update camera to follow player
         if self.player.alive:
@@ -430,7 +423,7 @@ class SlitherGame:
             ],
             'food': [{'x': f['x'], 'y': f['y']} for f in self.food],
             'score': self.score,
-            'world_size': {'width': WORLD_WIDTH, 'height': WORLD_HEIGHT}
+            'world_size': {'width': self.config['world_width'], 'height': self.config['world_height']}
         }
     
     # renders the grid, food, snakes, and text 
@@ -447,24 +440,36 @@ class SlitherGame:
         camera_x = self.camera['x']
         camera_y = self.camera['y']
         
-        start_x = int((camera_x - CANVAS_WIDTH / 2) / grid_size) * grid_size
-        start_y = int((camera_y - CANVAS_HEIGHT / 2) / grid_size) * grid_size
+        start_x = int((camera_x - self.config['canvas_width'] / 2) / grid_size) * grid_size
+        start_y = int((camera_y - self.config['canvas_height'] / 2) / grid_size) * grid_size
         
-        for x in range(start_x, int(camera_x + CANVAS_WIDTH / 2) + grid_size, grid_size):
-            screen_x = int(x - camera_x + CANVAS_WIDTH / 2)
-            pygame.draw.line(self.screen, GRID_COLOR, (screen_x, 0), (screen_x, CANVAS_HEIGHT))
+        for x in range(start_x, int(camera_x + self.config['canvas_width'] / 2) + grid_size, grid_size):
+            screen_x = int(x - camera_x + self.config['canvas_width'] / 2)
+            pygame.draw.line(self.screen, GRID_COLOR, (screen_x, 0), (screen_x, self.config['canvas_height']))
         
-        for y in range(start_y, int(camera_y + CANVAS_HEIGHT / 2) + grid_size, grid_size):
-            screen_y = int(y - camera_y + CANVAS_HEIGHT / 2)
-            pygame.draw.line(self.screen, GRID_COLOR, (0, screen_y), (CANVAS_WIDTH, screen_y))
+        for y in range(start_y, int(camera_y + self.config['canvas_height'] / 2) + grid_size, grid_size):
+            screen_y = int(y - camera_y + self.config['canvas_height'] / 2)
+            pygame.draw.line(self.screen, GRID_COLOR, (0, screen_y), (self.config['canvas_width'], screen_y))
+
+        # Draw wall
+        # vertical walls
+        screen_x = int(0 - camera_x + self.config['canvas_width'] / 2)
+        pygame.draw.line(self.screen, WALL_COLOR, (screen_x, 0), (screen_x, self.config['canvas_height']), width = 2)
+        screen_x = int(self.config['world_width'] - camera_x + self.config['canvas_width'] / 2)
+        pygame.draw.line(self.screen, WALL_COLOR, (screen_x, 0), (screen_x, self.config['canvas_height']), width = 2)
+        # horizontal walls
+        screen_y = int(0 - camera_y + self.config['canvas_height'] / 2)
+        pygame.draw.line(self.screen, WALL_COLOR, (0, screen_y), (self.config['canvas_width'], screen_y), width = 2)
+        screen_y = int(self.config['world_height'] - camera_y + self.config['canvas_height'] / 2)
+        pygame.draw.line(self.screen, WALL_COLOR, (0, screen_y), (self.config['canvas_width'], screen_y), width = 2)
         
         # Draw food
         for f in self.food:
-            screen_x = int(f['x'] - camera_x + CANVAS_WIDTH / 2)
-            screen_y = int(f['y'] - camera_y + CANVAS_HEIGHT / 2)
+            screen_x = int(f['x'] - camera_x + self.config['canvas_width'] / 2)
+            screen_y = int(f['y'] - camera_y + self.config['canvas_height'] / 2)
             
-            if -50 < screen_x < CANVAS_WIDTH + 50 and -50 < screen_y < CANVAS_HEIGHT + 50:
-                pygame.draw.circle(self.screen, FOOD_COLOR, (screen_x, screen_y), FOOD_RADIUS)
+            if -50 < screen_x < self.config['canvas_width'] + 50 and -50 < screen_y < self.config['canvas_height'] + 50:
+                pygame.draw.circle(self.screen, FOOD_COLOR, (screen_x, screen_y), self.config['food_radius'])
         
         # Draw snakes
         for snake in self.snakes:
@@ -490,9 +495,9 @@ class SlitherGame:
             final_score_text = self.small_font.render(f"Final Score: {self.score}", True, WHITE)
             restart_text = self.small_font.render("Press R to restart", True, WHITE)
             
-            self.screen.blit(game_over_text, (CANVAS_WIDTH // 2 - 100, CANVAS_HEIGHT // 2 - 50))
-            self.screen.blit(final_score_text, (CANVAS_WIDTH // 2 - 80, CANVAS_HEIGHT // 2))
-            self.screen.blit(restart_text, (CANVAS_WIDTH // 2 - 100, CANVAS_HEIGHT // 2 + 30))
+            self.screen.blit(game_over_text, (self.config['canvas_width'] // 2 - 100, self.config['canvas_height'] // 2 - 50))
+            self.screen.blit(final_score_text, (self.config['canvas_width'] // 2 - 80, self.config['canvas_height'] // 2))
+            self.screen.blit(restart_text, (self.config['canvas_width'] // 2 - 100, self.config['canvas_height'] // 2 + 30))
         
         pygame.display.flip()
     
@@ -541,24 +546,3 @@ class SlitherGame:
         if self.render_enabled:
             pygame.quit()
 
-
-def main():
-    """Main game loop for human play"""
-    game = SlitherGame(render=True)
-    
-    running = True
-    while running:
-        running = game.handle_events()
-        
-        if game.game_running:
-            action = game.get_action_from_keys()
-            game.step(action)
-        
-        game.render()
-        game.clock.tick(FPS)
-    
-    game.close()
-
-
-if __name__ == "__main__":
-    main()
