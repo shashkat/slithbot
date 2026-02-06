@@ -265,6 +265,9 @@ class SlitherGame:
     def __init__(self, config: dict):
         self.config = config
         self.render_enabled = self.config['render']
+
+        # some assertions. Just so that we ensure that variables have values among what we expect
+        assert self.config['camera_mode'] in ['follow_player', 'center']
         
         if self.render_enabled:
             self.screen = pygame.display.set_mode((self.config['canvas_width'], self.config['canvas_height']))
@@ -377,10 +380,11 @@ class SlitherGame:
                 y = random.random() * self.config['world_height']
                 self.snakes[i] = Snake(x, y, self.config, is_player=False)
         
-        # Update camera to follow player
+        # Update camera to follow player, if camera_mode is follow_player. Else, do nothing
         if self.player.alive:
-            self.camera['x'] = self.player.head['x']
-            self.camera['y'] = self.player.head['y']
+            if self.config['camera_mode'] == 'follow_player':
+                self.camera['x'] = self.player.head['x']
+                self.camera['y'] = self.player.head['y']
         
         # Calculate reward. 
         # THIS PART SEEMS TO BE FOR THE RL, AND NOT NECESSARY FOR THE RAW GAME RUNNING.
