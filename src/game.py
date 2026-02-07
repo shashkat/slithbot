@@ -292,9 +292,12 @@ class SlitherGame:
         self.game_running = True
         self.camera = {'x': self.config['world_width'] / 2, 'y': self.config['world_height'] / 2}
         
-        # Create player
-        self.player = Snake(self.config['world_width'] / 2, self.config['world_height'] / 2, self.config, is_player=True)
-        self.snakes.append(self.player)
+        # Create player if configuration "with_player" is true
+        if self.config['with_player'] == True:
+            self.player = Snake(self.config['world_width'] / 2, self.config['world_height'] / 2, self.config, is_player=True)
+            self.snakes.append(self.player)
+        else:
+            self.player = None
         
         # Create bots. Bots have two extra attributes: ai_timer (used for random exploration by bot), 
         # and ai_target (used to store location of nearest food)
@@ -320,7 +323,7 @@ class SlitherGame:
     # according to update_ai method), checking food collision and growing the snakes if food collision 
     # happened checking snakes' collision and according declaring snakes dead, respawning the dead bots, 
     # and updating self.camera with self.player.head information
-    def step(self, action: Optional[int] = None) -> Tuple[Dict, float, bool, Dict]:
+    def step(self, action: Optional[int] = None):
         """
         Execute one game step
         
@@ -333,7 +336,12 @@ class SlitherGame:
             done: Whether game is over
             info: Additional information
         """
-        if action is not None and self.player.alive:
+
+        # Some assertions to make sure something that we don't intend is not happening
+        assert self.game_running == True # The way the code flow is designed, SlitherGame.step() shouldn't be called if game_running is False. This also implies that if self.player exists, it would be alive at this point.
+        assert (self.player is None) or (self.player.alive == True) # at this point in code, either the player should be None, i.e. running in non-player mode, or if the player exists, then it should be alive at this point.
+
+        if action is not None and self.player is not None:
             if action == -1:
                 self.player.turn(-1)
             elif action == 1:
@@ -343,8 +351,6 @@ class SlitherGame:
         for snake in self.snakes:
             snake.update(self.snakes, self.food)
         
-        # old_length = self.player.length # NOT REQUIRED
-
         # Check food collisions
         # loop through all the snakes and update their segments (and food locations) acc to food collision.
         for snake in self.snakes:
@@ -381,40 +387,22 @@ class SlitherGame:
                 self.snakes[i] = Snake(x, y, self.config, is_player=False)
         
         # Update camera to follow player, if camera_mode is follow_player. Else, do nothing
-        if self.player.alive:
-            if self.config['camera_mode'] == 'follow_player':
+        if self.config['camera_mode'] == 'follow_player':
+            if self.player.alive:
                 self.camera['x'] = self.player.head['x']
                 self.camera['y'] = self.player.head['y']
         
-        # Calculate reward. 
-        # THIS PART SEEMS TO BE FOR THE RL, AND NOT NECESSARY FOR THE RAW GAME RUNNING.
-        reward = food_eaten * 10  # Reward for eating food
-        if not self.player.alive:
-            reward -= 100  # Penalty for dying
-        
+        # some things being returned. Probably relevant for RL part. Can possibly be removed later.
         state = self.get_state()
         done = not self.game_running
-        info = {
-            'score': self.score,
-            'length': self.player.length,
-            'food_eaten': food_eaten
-        }
         
-        return state, reward, done, info
+        return state, done
     
     # return a big dict, with keys ['player', 'snakes', 'food', 'score', 'world_size'], with information 
     # about these respective things.
     def get_state(self) -> Dict:
         """Get current game state for RL agent"""
-        return {
-            'player': {
-                'alive': self.player.alive,
-                'x': self.player.head['x'],
-                'y': self.player.head['y'],
-                'angle': self.player.angle,
-                'length': self.player.length,
-                'segments': [{'x': s['x'], 'y': s['y']} for s in self.player.segments]
-            },
+        game_state_dict = {
             'snakes': [
                 {
                     'x': s.head['x'],
@@ -429,6 +417,21 @@ class SlitherGame:
             'score': self.score,
             'world_size': {'width': self.config['world_width'], 'height': self.config['world_height']}
         }
+
+        # according to self.player being None or not, add information about 'player' to game_state_dict
+        if self.player is None:
+            game_state_dict['player'] = None
+        else:
+            game_state_dict['player'] = {
+                'alive': self.player.alive,
+                'x': self.player.head['x'],
+                'y': self.player.head['y'],
+                'angle': self.player.angle,
+                'length': self.player.length,
+                'segments': [{'x': s['x'], 'y': s['y']} for s in self.player.segments]
+            }
+
+        return game_state_dict
     
     # renders the grid, food, snakes, and text 
     def render(self):
@@ -481,17 +484,17 @@ class SlitherGame:
         
         # Draw UI
         score_text = self.font.render(f"Score: {self.score}", True, WHITE)
-        length_text = self.small_font.render(f"Length: {self.player.length}", True, WHITE)
+        # length_text = self.small_font.render(f"Length: {self.player.length}", True, WHITE)
         
         # Calculate rank
-        living_snakes = [s for s in self.snakes if s.alive]
-        living_snakes.sort(key=lambda s: s.length, reverse=True)
-        rank = living_snakes.index(self.player) + 1 if self.player in living_snakes else len(living_snakes)
-        rank_text = self.small_font.render(f"Rank: {rank}/{len(living_snakes)}", True, WHITE)
+        # living_snakes = [s for s in self.snakes if s.alive]
+        # living_snakes.sort(key=lambda s: s.length, reverse=True)
+        # rank = living_snakes.index(self.player) + 1 if self.player in living_snakes else len(living_snakes)
+        # rank_text = self.small_font.render(f"Rank: {rank}/{len(living_snakes)}", True, WHITE)
         
         self.screen.blit(score_text, (20, 20))
-        self.screen.blit(length_text, (20, 60))
-        self.screen.blit(rank_text, (20, 90))
+        # self.screen.blit(length_text, (20, 60))
+        # self.screen.blit(rank_text, (20, 90))
         
         # Game over
         if not self.game_running:
