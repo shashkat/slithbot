@@ -436,8 +436,10 @@ class SlitherGame:
     # renders the grid, food, snakes, and text 
     def render(self):
         """Render the game"""
+
+        # ensure that self.render_enabled is not False
         if not self.render_enabled:
-            return
+            raise Exception('game.render() called when game.render_enabled is False!')
         
         # Clear screen
         self.screen.fill(BACKGROUND)
@@ -515,6 +517,7 @@ class SlitherGame:
         # events to begin with to handle.
         if not self.render_enabled:
             return True
+            # in order to end game when it is in no render mode, simply press ctrl+c
         
         for event in pygame.event.get():
             # if something caused the pygame.QUIT event to be present in current iteration's events list 

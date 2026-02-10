@@ -17,8 +17,9 @@ def load_config(config_path: str) -> dict:
 def main(config_path: str):
     config = load_config(config_path)
     game = SlitherGame(config)
-    
+
     running = True
+    itr = 0
     while running:
         running = game.handle_events()
 
@@ -26,9 +27,17 @@ def main(config_path: str):
             action = game.get_action_from_keys()
             game.step(action)
 
-        game.render()
-        game.clock.tick(config['fps'])
+        # the render and clock.tick methods are meant to be called only if the game is being rendered. Other 
+        # methods, if their behavior depends on config['render'], handle it within that method itself.
+        if config['render']:
+            game.render()
+            game.clock.tick(config['fps'])
+        else: # if not render, just print a message indicating game running
+            if itr%100 == 0:
+                print(f'Just executed iteration {itr} of the game!')
+        itr += 1
     game.close()
+
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
