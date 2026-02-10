@@ -176,13 +176,17 @@ class Snake:
     def check_snake_collision(self, snakes: List['Snake']) -> bool:
         """Returns True if collision occurred"""
         for snake in snakes:
-            if not snake.alive:
-                continue
+
+            # not checking for aliveness of snake in snakes because if it was not alive, it would have just died in the 
+            # current step (as snakes are born in each step of the game). Hence, its fine even if a snake dies by 
+            # colliding with another snake which just died in the same step
             
             # don't wanna count collision with self as collision
             if snake is self:
                 continue
 
+            # check distance of self with current snake's all segments and if any of the distances is less than a 
+            # certain amount, then return True
             for i in range(0, len(snake.segments)):
                 seg = snake.segments[i]
                 dist = math.hypot(seg['x'] - self.head['x'], seg['y'] - self.head['y'])
@@ -380,8 +384,11 @@ class SlitherGame:
                     self.game_running = False
         
         # Respawn dead bots
-        for i in range(1, len(self.snakes)):
-            if not self.snakes[i].alive:
+        # here change the way bot snakes are found. dont use indexing from 1 to len(self.snakes.)
+        for i, snake in enumerate(self.snakes):
+            if snake.is_player:
+                continue # skip if snake is player, as we just end game if at all there was a player snake and it died
+            if not snake.alive:
                 x = random.random() * self.config['world_width']
                 y = random.random() * self.config['world_height']
                 self.snakes[i] = Snake(x, y, self.config, is_player=False)
