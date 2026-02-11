@@ -1,4 +1,4 @@
-# slithbot <img src="docs/logo.png" align="right" width="300" />
+# slithbot <img src="docs/logo.png" align="right" width="350" />
 
 A custom, lightweight implementation of a Slither-like environment designed specifically for training autonomous agents using Reinforcement Learning.
 
